@@ -1,0 +1,5 @@
+{
+    "presets": ["env"],
+    "sourceRoot" : "dist",
+    "minified" : true
+}

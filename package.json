@@ -1,0 +1,25 @@
+{
+  "name": "caboodlecore",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha --compilers js:babel-core/register spec/*.spec.js",
+    "build": "babel src --presets babel-preset-env --minify true --shouldPrintComment false  --out-dir dist"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "babel": "^6.23.0",
+    "babel-cli": "^6.26.0",
+    "babel-preset-env": "^1.6.0",
+    "babel-preset-minify": "^0.2.0",
+    "chai": "^4.1.2",
+    "chai-as-promised": "^7.1.1",
+    "mocha": "^3.5.3"
+  },
+  "dependencies": {
+    "axios": "^0.16.2",
+    "lokijs": "^1.5.0"
+  }
+}
