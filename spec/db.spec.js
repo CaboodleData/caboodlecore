@@ -41,7 +41,7 @@ describe('Testing Datastore', () => {
             age: "25",
             id: "001DD"
         }]
-        return expect(_datastore.putItems('tdd_collection', data)).to.eventually.be.an('object');
+        return expect(_datastore.putItems('tdd_collection', data)).to.eventually.be.an('array');
         done();
     });
 
