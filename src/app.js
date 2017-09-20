@@ -8,9 +8,8 @@ var data = {
     id : "001EE"
 }
 
-
 d1.createCollection('test_col').then((res) => {
-    d1.putItem('test_col',data).then((res) => {
+    d1.putItems('test_col',data).then((res) => {
         console.log(res)
         data.id = '001DE'
         d1.updateItem('test_col',data).then((d) => {

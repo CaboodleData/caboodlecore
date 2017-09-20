@@ -1,24 +1,26 @@
 import Loki from 'lokijs';
+import LokiReactNativeAdapter from 'loki-react-native-adapter'
 
-/* 
-  * Setting up block level variable to store class state
-  * , set's to null by default.
-*/
 let instance = null;
 let databaseConnection = null;
 
 class Datastore {
-  constructor(isTest) {
+  constructor(opts) {
     if (!instance) {
       instance = this;
+      if (opts) {
+        this.opts = {}
+        this.opts.native = opts.native;
+        this.opts.testing = opts.testing;
+      }
     }
 
-    if (isTest) {
-      this._isTest = isTest;
-    }
     return instance;
   }
 
+  /** Returns a a Promise with the database connection when resolved
+   *  @returns {Promise<Object>} 
+   */
   _getDBConnection() {
     return new Promise((resolve) => {
       if (databaseConnection) {
@@ -31,15 +33,16 @@ class Datastore {
           opt = {native: null, testing : null, autosaveInterval : null}
         **/
         var dbAdapter = null;
-        if (!this._isTest) {
-          var adapterRef = new Loki().getIndexedAdapter();
-          dbAdapter = new adapterRef('caboodle'); //initialize a new indexDB adapter
+        if (this.opts.native == true) {
+          dbAdapter = new LokiReactNativeAdapter();
+        } else if (this.opts.testing) {
+          dbAdapter = new Loki.LokiMemoryAdapter();
+        } else {
           //Instantiating the new database - NB, autoload is important for anytime you are going to use persistent storage
           //Keep a close watch to see what overhead is presented when throttledSaves is set to false and see how we can solve this problem
-        } else {
-          dbAdapter = new Loki.LokiMemoryAdapter();
+          var adapterRef = new Loki().getIndexedAdapter();
+          dbAdapter = new adapterRef('caboodle'); //initialize a new indexDB adapter
         }
-
         let opt = { adapter: dbAdapter, throttledSaves: false, autosave: true, autosaveInterval: 1000, autoload: true };
         var db = new Loki('caboodle.db', opt);
         db.loadDatabase({}, () => {
@@ -50,6 +53,10 @@ class Datastore {
     });
   }
 
+
+  /** Persistenly saves the state of the database.
+   *  @returns {Promise<Object>} 
+   */
   _saveDatabase() {
     return new Promise((resolve) => {
       this._getDBConnection().then((connection) => {
@@ -58,6 +65,10 @@ class Datastore {
     });
   }
 
+  /** Create a new table in the data
+   *  @param {string} collection 
+   *  @returns {promise} 
+   */
   createCollection(collection) {
     return new Promise((resolve, reject) => {
       this._getDBConnection().then((connection) => {
@@ -71,7 +82,11 @@ class Datastore {
     });
   }
 
-  /* * Puts in a single object into a collection. */
+  /** Puts in a single object into a datastore table.
+   *  @param {String} collection - The name you want to insert the data into
+   *  @param {Object} item - The data you want to insert into the database
+   *  @returns {Promise<Object>} 
+   */
   putItem(collection, item) {
     return new Promise((resolve, reject) => {
       this._getDBConnection().then((connection) => {
@@ -95,12 +110,20 @@ class Datastore {
     });
   }
 
-  //Collection inserts handle array of data as well, I just separated the functions to keep the naming clean
+  /** Puts in multiple objects into a datastore table.
+   *  @param {String} collection - The name you want to insert the data into
+   *  @param {Object[]} items - The data you want to insert into the database
+   *  @returns {Promise<Object>} 
+   */
   putItems(collection, items) {
     return this.putItem(collection, items);
   }
 
-  /* * Puts in a single object into a collection. */
+  /** update an object in a datastore table.
+   *  @param {String} collection - The name you want to insert the data into
+   *  @param {Object} item - The data you want to update
+   *  @returns {Promise<Object>} 
+   */
   updateItem(collection, item) {
     return new Promise((resolve, reject) => {
       this._getDBConnection().then((connection) => {
@@ -115,21 +138,42 @@ class Datastore {
     });
   }
 
-
-removeItem(collection, item) {
-  return new Promise((resolve, reject) => {
-    this._getDBConnection().then((connection) => {
-      try {
-        var _collection = connection.getCollection(collection);
-        _collection.remove(item);
-        this._saveDatabase().then(() => { resolve(true); });
-      } catch (error) {
-        reject(error);
-      }
+  /** Removes an item from a datastore table.
+   *  @param {String} collection - The name you want to insert the data into
+   *  @param {Object} item - The data you want to delete
+   *  @returns {Promise<Object>} 
+   */
+  removeItem(collection, item) {
+    return new Promise((resolve, reject) => {
+      this._getDBConnection().then((connection) => {
+        try {
+          var _collection = connection.getCollection(collection);
+          _collection.remove(item);
+          this._saveDatabase().then(() => { resolve(true); });
+        } catch (error) {
+          reject(error);
+        }
+      });
     });
-  });
-}
+  }
 
+  /** Removes an item from a datastore table.
+   *  @param {String} collection - The name of the table you want to clear/delete
+   *  @returns {Promise<Boolean>} 
+   */
+  clearCollection(collection) {
+    return new Promise((resolve, reject) => {
+      this._getDBConnection().then((connection) => {
+        try {
+          let _collection = connection.addCollection(collection);
+          _collection.clear();
+          this._saveDatabase().then(() => { resolve(true); });
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+  }
 }
 
 export default Datastore;
